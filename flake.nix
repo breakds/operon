@@ -1,14 +1,25 @@
 {
   description = "Operon development environment";
 
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.foolnotion.url = "github:foolnotion/nur-pkg";
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/master";
-  inputs.pratt-parser.url = "github:foolnotion/pratt-parser-calculator";
-  inputs.vstat.url = "github:heal-research/vstat/main";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+
+    flake-utils.url = "github:numtide/flake-utils";
+
+    foolnotion.url = "github:foolnotion/nur-pkg";
+    foolnotion.inputs.nixpkgs.follows = "nixpkgs";
+
+    pratt-parser.url = "github:foolnotion/pratt-parser-calculator";
+    pratt-parser.inputs.nixpkgs.follows = "nixpkgs";
+    pratt-parser.inputs.foolnotion.follows = "foolnotion";
+
+    vstat.url = "github:heal-research/vstat/main";
+    vstat.inputs.nixpkgs.follows = "nixpkgs";
+    vstat.inputs.foolnotion.follows = "foolnotion";
+  };
 
   outputs = { self, flake-utils, nixpkgs, foolnotion, pratt-parser, vstat }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -54,8 +65,7 @@
         };
 
       in rec {
-        packages.${system}.default = operon;
-        defaultPackage = operon; 
+        packages.default = operon;
 
         devShell = pkgs.stdenv.mkDerivation {
           name = "operon-env";
