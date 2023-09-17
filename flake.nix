@@ -74,13 +74,12 @@
     in rec {
       packages.default = operon;
 
-      devShell = pkgs.stdenv.mkDerivation {
+      devShells.default = pkgs.clang16Stdenv.mkDerivation {
         name = "operon-env";
         hardeningDisable = [ "all" ];
         impureUseNativeOptimizations = true;
         nativeBuildInputs = operon.nativeBuildInputs ++ (with pkgs; [
           bear
-          clang_14
           clang-tools
           cppcheck
           include-what-you-use
