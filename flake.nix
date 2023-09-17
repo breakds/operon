@@ -4,98 +4,98 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
 
-    flake-utils.url = "github:numtide/flake-utils";
+    utils.url = "github:numtide/flake-utils";
 
-    foolnotion.url = "github:foolnotion/nur-pkg";
-    foolnotion.inputs.nixpkgs.follows = "nixpkgs";
-
-    pratt-parser.url = "github:foolnotion/pratt-parser-calculator";
-    pratt-parser.inputs.nixpkgs.follows = "nixpkgs";
-    pratt-parser.inputs.foolnotion.follows = "foolnotion";
-
-    vstat.url = "github:heal-research/vstat/main";
-    vstat.inputs.nixpkgs.follows = "nixpkgs";
-    vstat.inputs.foolnotion.follows = "foolnotion";
+    ml-pkgs.url = "github:nixvital/ml-pkgs";
+    ml-pkgs.inputs.nixpkgs.follows = "nixpkgs";
+    ml-pkgs.inputs.utils.follows = "utils";
   };
 
-  outputs = { self, flake-utils, nixpkgs, foolnotion, pratt-parser, vstat }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ foolnotion.overlay ];
-        };
-        operon = pkgs.stdenv.mkDerivation {
-          name = "operon";
-          src = self;
+  outputs = { self, utils, nixpkgs, ml-pkgs }: {
+    overlays = {
+      deps = final: prev: {
+        pratt-parser = final.callPackage ./nix/pkgs/pratt-parser {};
+        vstat = final.callPackage ./nix/pkgs/vstat {};
+      };
+      
+      dev = nixpkgs.lib.composeManyExtensions [
+        ml-pkgs.overlays.cc-batteries
+        self.overlays.deps
+      ];
+    };
+  } // utils.lib.eachSystem [ "x86_64-linux" ] (system:
+    let
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+          self.overlays.dev
+        ];
+      };
+      
+      operon = pkgs.stdenv.mkDerivation {
+        name = "operon";
+        src = self;
 
-          cmakeFlags = [
-            "-DBUILD_CLI_PROGRAMS=ON"
-            "-DBUILD_SHARED_LIBS=${if pkgs.hostPlatform.isStatic then "OFF" else "ON"}"
-            "-DBUILD_TESTING=OFF"
-            "-DCMAKE_BUILD_TYPE=Release"
-            "-DUSE_OPENLIBM=ON"
-            "-DUSE_SINGLE_PRECISION=ON"
-            "-DCMAKE_CXX_FLAGS=${if pkgs.hostPlatform.isx86_64 then "-march=x86-64-v3" else ""}"
-          ];
+        cmakeFlags = [
+          "-DBUILD_CLI_PROGRAMS=ON"
+          "-DBUILD_SHARED_LIBS=${if pkgs.hostPlatform.isStatic then "OFF" else "ON"}"
+          "-DBUILD_TESTING=OFF"
+          "-DCMAKE_BUILD_TYPE=Release"
+          "-DUSE_OPENLIBM=ON"
+          "-DUSE_SINGLE_PRECISION=ON"
+          "-DCMAKE_CXX_FLAGS=${if pkgs.hostPlatform.isx86_64 then "-march=x86-64-v3" else ""}"
+        ];
 
-          nativeBuildInputs = with pkgs; [ cmake ];
+        nativeBuildInputs = with pkgs; [ cmake ];
 
-          buildInputs = (with pkgs; [
-            aria-csv
-            cpp-sort
-            cxxopts
-            doctest
-            eigen
-            fast_float
-            fmt_8
-            git
-            mold
-            openlibm
-            pkg-config
-            pratt-parser.packages.${system}.default
-            scnlib
-            span-lite
-            taskflow
-            unordered_dense
-            vectorclass
-            vstat.packages.${system}.default
-            xxhash_cpp
-          ]);
-        };
+        buildInputs = (with pkgs; [
+          aria-csv-parser
+          cpp-sort
+          cxxopts
+          doctest
+          eigen
+          fast-float
+          fmt_8
+          git
+          mold
+          openlibm
+          pkg-config
+          pratt-parser
+          scnlib
+          span-lite
+          taskflow
+          unordered-dense
+          vectorclass
+          vstat
+          xxhash-cpp
+        ]);
+      };
 
-      in rec {
-        packages.default = operon;
+    in rec {
+      packages.default = operon;
 
-        devShell = pkgs.stdenv.mkDerivation {
-          name = "operon-env";
-          hardeningDisable = [ "all" ];
-          impureUseNativeOptimizations = true;
-          nativeBuildInputs = operon.nativeBuildInputs ++ (with pkgs; [
-            bear
-            clang_14
-            clang-tools
-            cppcheck
-            include-what-you-use
-          ]);
+      devShell = pkgs.stdenv.mkDerivation {
+        name = "operon-env";
+        hardeningDisable = [ "all" ];
+        impureUseNativeOptimizations = true;
+        nativeBuildInputs = operon.nativeBuildInputs ++ (with pkgs; [
+          bear
+          clang_14
+          clang-tools
+          cppcheck
+          include-what-you-use
+        ]);
 
-          buildInputs = operon.buildInputs ++ (with pkgs; [
-            gdb
-            hotspot
-            valgrind
-            jemalloc
-            linuxPackages.perf
-            graphviz
-            seer
-            hyperfine
-          ]);
-
-          shellHook = ''
-            LD_LIBRARY_PATH=${
-              pkgs.lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ]
-            };
-            alias bb="cmake --build build -j"
-          '';
-        };
-      });
+        buildInputs = operon.buildInputs ++ (with pkgs; [
+          gdb
+          hotspot
+          valgrind
+          jemalloc
+          linuxPackages.perf
+          graphviz
+          seer
+          hyperfine
+        ]);
+      };
+    });
 }
