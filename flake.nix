@@ -55,7 +55,7 @@
           doctest
           eigen
           fast-float
-          fmt_8
+          fmt
           git
           mold
           openlibm
@@ -68,6 +68,7 @@
           vectorclass
           vstat
           xxhash-cpp
+          spdlog
         ]);
       };
 
