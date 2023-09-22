@@ -2,33 +2,38 @@
   description = "Operon development environment";
 
   inputs = {
-    flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:nixos/nixpkgs/master";
-    foolnotion.url = "github:foolnotion/nur-pkg";
-    lbfgs.url = "github:foolnotion/lbfgs";
-    pratt-parser.url = "github:foolnotion/pratt-parser-calculator";
-    vstat.url = "github:heal-research/vstat/cpp20-eve";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
 
-    # make everything follow nixpkgs
-    foolnotion.inputs.nixpkgs.follows = "nixpkgs";
-    lbfgs.inputs.nixpkgs.follows = "nixpkgs";
-    pratt-parser.inputs.nixpkgs.follows = "nixpkgs";
-    vstat.inputs.nixpkgs.follows = "nixpkgs";
+    utils.url = "github:numtide/flake-utils";
+
+    ml-pkgs.url = "github:nixvital/ml-pkgs";
+    ml-pkgs.inputs.nixpkgs.follows = "nixpkgs";
+    ml-pkgs.inputs.utils.follows = "utils";    
   };
 
-  outputs = { self, flake-utils, nixpkgs, foolnotion, pratt-parser, vstat, lbfgs }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = { self, utils, nixpkgs, ml-pkgs }: {
+    overlays = {
+      deps = final: prev: let stdenv_ = final.clang16Stdenv; in  {
+        pratt-parser = final.callPackage ./nix/pkgs/pratt-parser { stdenv = stdenv_; };
+        vstat = final.callPackage ./nix/pkgs/vstat { stdenv = stdenv_; };
+        lbfgs = final.callPackage ./nix/pkgs/lbfgs { stdenv = stdenv_; };
+      };
+      
+      dev = nixpkgs.lib.composeManyExtensions [
+        ml-pkgs.overlays.cc-batteries
+        self.overlays.deps
+      ];
+    };    
+  } // utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ foolnotion.overlay ];
+          overlays = [ self.overlays.dev ];
         };
 
         stdenv_ = pkgs.overrideCC pkgs.llvmPackages_16.stdenv (
           pkgs.clang_16.override { gccForLibs = pkgs.gcc13.cc; }
         );
-        #stdenv_ = pkgs.llvmPackages_16.libcxxStdenv;
-        # stdenv_ = pkgs.llvmPackages_16.stdenv;
 
         operon = stdenv_.mkDerivation {
           name = "operon";
@@ -46,28 +51,28 @@
           nativeBuildInputs = with pkgs; [ cmake git ];
 
           buildInputs = (with pkgs; [
-            aria-csv
+            aria-csv-parser
             ceres-solver
             cpp-sort
             cxxopts
             doctest
             eigen
             eve
-            fast_float
+            fast-float
             fmt
             icu
             jemalloc
             openlibm
             pkg-config
-            pratt-parser.packages.${system}.default
+            pratt-parser
             scnlib
             taskflow
-            unordered_dense
-            vstat.packages.${system}.default
-            lbfgs.packages.${system}.default
-            ned14-outcome
-            ned14-quickcpplib
-            ned14-status-code
+            unordered-dense
+            vstat
+            lbfgs
+            outcome
+            quickcpplib
+            status-code
             xxHash
           ]);
         };
