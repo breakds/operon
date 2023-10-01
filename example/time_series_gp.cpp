@@ -83,6 +83,14 @@ int main()
     tree_init.SetMinDepth(1);
     tree_init.SetMaxDepth(1000);
 
+    // --> Step 2.3 - CoefficientInitializer. My current understanding is that
+    //                this is used to initialize the parameters that need to be
+    //                "trained". For pure symbolic training there should be no
+    //                parameters to train (as far as I understand ...)
+
+    Operon::CoefficientInitializer<std::uniform_int_distribution<int>> coeff_init {};
+    coeff_init.ParameterizeDistribution(-5, 5);
+
     // Create a genetic algorithm solving engine using the NSGA 2 algorithm.
     // Operon::NSGA2 gp {};
     return 0;
