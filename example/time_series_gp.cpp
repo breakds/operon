@@ -67,11 +67,21 @@ int main()
 
     // --> Step 2.1 - TreeCreator. It is a basic component that is called to
     //                assemble a tree based on the existing pset and inputs.
+    //                TreeCreator inherits from OperatorBase.
 
     auto creator = std::make_unique<Operon::BalancedTreeCreator>(
         problem.GetPrimitiveSet(),
         problem.GetInputs(),
         0.0 /* irregularity bias */);
+
+    // --> Step 2.2 - TreeInitializer. This uses the creator under the hood and
+    //                initialize the trees. TreeInitializer inherits from
+    //                OperatorBase.
+
+    Operon::UniformTreeInitializer tree_init(*creator);
+    tree_init.ParameterizeDistribution(size_t(2), size_t(15) /* max length */);
+    tree_init.SetMinDepth(1);
+    tree_init.SetMaxDepth(1000);
 
     // Create a genetic algorithm solving engine using the NSGA 2 algorithm.
     // Operon::NSGA2 gp {};
