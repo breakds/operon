@@ -1,4 +1,5 @@
 #include <chrono>
+#include <memory>
 
 #include "fmt/core.h"
 #include "operon/algorithms/nsga2.hpp"
@@ -34,7 +35,9 @@ int main()
 
     fmt::print("Config.Generations: {}\n", config.Generations);
 
-    // Step 1 - Set up the problem, i.e., the "what"
+    // +-------------------------------------------------------------+
+    // | Step 1 - Set up the problem, i.e., the "what"               |
+    // +-------------------------------------------------------------+
 
     // --> Step 1.1 Dataset
     Operon::Dataset dataset { "/home/breakds/tmp/gp_data.csv", true /* header */ };
@@ -46,7 +49,7 @@ int main()
     fmt::print("Testing size: {}\n", test_range.Size());
     fmt::print("Validation size: {}\n", valid_range.Size());
 
-    // --> Step 1.final Create the problem
+    // --> Step 1.final - Create the problem
     Operon::Problem problem {
         dataset, /* ownership transferred */
         train_range,
@@ -54,7 +57,21 @@ int main()
         valid_range,
     };
 
-    // Step 2 - Setup the solver (NSGA2 instance), i.e. the "how"
+    // --> Step 1.extra - Update the primitive (operator) set, a.k.a. pset.
+
+    // TODO(breakds): Implement this
+
+    // +-------------------------------------------------------------+
+    // | Step 2 - Setup the solver (NSGA2 instance), i.e. the "how"  |
+    // +-------------------------------------------------------------+
+
+    // --> Step 2.1 - TreeCreator. It is a basic component that is called to
+    //                assemble a tree based on the existing pset and inputs.
+
+    auto creator = std::make_unique<Operon::BalancedTreeCreator>(
+        problem.GetPrimitiveSet(),
+        problem.GetInputs(),
+        0.0 /* irregularity bias */);
 
     // Create a genetic algorithm solving engine using the NSGA 2 algorithm.
     // Operon::NSGA2 gp {};
