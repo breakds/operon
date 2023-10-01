@@ -21,3 +21,4 @@ function(add_example NAME)
 endfunction()
 
 add_example(empty_example)
+add_example(time_series_gp)

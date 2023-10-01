@@ -254,7 +254,7 @@ endif()
 # ---- Examples ----
 
 if(PROJECT_IS_TOP_LEVEL)
-  option(BUILD_EXAMPLES "Build examples tree." "${operon_DEVELOPER_MODE}")
+  option(BUILD_EXAMPLES "Build examples tree." ON)
   if(BUILD_EXAMPLES)
     add_subdirectory(example)
   endif()
