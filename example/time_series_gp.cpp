@@ -17,6 +17,8 @@
 #include "operon/operators/reinserter.hpp"
 #include "operon/operators/selector.hpp"
 
+constexpr size_t MAX_LENGTH = 50;
+
 int main()
 {
     // Step 0 - Initialize the configuration.
@@ -64,6 +66,34 @@ int main()
     // +-------------------------------------------------------------+
     // | Step 2 - Setup the solver (NSGA2 instance), i.e. the "how"  |
     // +-------------------------------------------------------------+
+    //
+    //
+    //                       GP (NSGA2) Algorithm
+    //                               |
+    //               +-------+-------+-------+-------+
+    //               |       |       |       |       |
+    //           TreeInit    |       |   Reinserter  |
+    //               |   CoeffInit   |       |     Sorter
+    //            Creator            |       |
+    //                           Generator   +-----------+
+    //                               |                   |
+    //               +-------+-------+----------+        |
+    //               |       |       |          |        |
+    //        MultiEval  CrossOver   |        Selector --+- Comparison
+    //               |          MultiMutator
+    //               |          | | | | | |
+    //               |            ......
+    //           ErrorEval
+    //               |
+    //               +------+
+    //               |      |
+    //             Error    |
+    //                      |
+    //                  Interpreter
+    //                      |
+    //                 DispatchTable
+    //                      |
+    //              (Custom Primitive)
 
     // --> Step 2.1 - TreeCreator. It is a basic component that is called to
     //                assemble a tree based on the existing pset and inputs.
@@ -79,7 +109,7 @@ int main()
     //                OperatorBase.
 
     Operon::UniformTreeInitializer tree_init(*creator);
-    tree_init.ParameterizeDistribution(size_t(2), size_t(15) /* max length */);
+    tree_init.ParameterizeDistribution(size_t(2), MAX_LENGTH);
     tree_init.SetMinDepth(1);
     tree_init.SetMaxDepth(1000);
 
@@ -90,6 +120,21 @@ int main()
 
     Operon::CoefficientInitializer<std::uniform_int_distribution<int>> coeff_init {};
     coeff_init.ParameterizeDistribution(-5, 5);
+
+    // --> Step 2.4 - OffspringGenerator. This is one of the most critical
+    //                components which decides for every generation how the new
+    //                offspring are generated (then evaluated).
+
+    //     | Step 2.4.0 - Interpreter and DispatchTable
+
+    // TODO(breakds): Add custom primitives.
+    // Operon::DispatchTable<Operon::Scalar> dispatch_table;
+    // Operon::Interpreter interpreter { dispatch_table, dataset };
+
+    //     | Step 2.5.1 - Evaluator
+    //     |              This defines how to evaluate a candidate formula
+
+    Operon::LengthEvaluator length_val(problem, MAX_LENGTH);
 
     // Create a genetic algorithm solving engine using the NSGA 2 algorithm.
     // Operon::NSGA2 gp {};
